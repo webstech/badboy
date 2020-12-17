@@ -90,5 +90,5 @@ jobs:
             expireDate: yesterdayIsh.toISOString(),
           };
           const result = await github.graphql(query, variables);
-          console.log(result.searches.edges);
+          console.log(result.search.edges);
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
