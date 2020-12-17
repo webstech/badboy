@@ -27,7 +27,7 @@ jobs:
     env:
       # see github-glue.test.ts for info on setting these
       GGG_TOKEN: ${{ secrets.GGG_TOKEN }}
-      # GGG_REPOSITORY: ${{ secrets.GGG_REPOSITORY }}
+      GGG_REPOSITORY: ${{ secrets.GGG_REPOSITORY }}
 
     steps:
     - uses: actions/setup-node@v1
@@ -47,7 +47,8 @@ jobs:
                 nodes {
                   id,
                   title,
-                  updatedAt
+                  updatedAt,
+                  headRefName
                 }
               }
             }
@@ -60,6 +61,58 @@ jobs:
           console.log(result.repository.pullRequests.nodes)
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
 
+    - name: Clean up branches which closes PRs
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{secrets.GGG_TOKEN}}
+        # github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const yesterdayIsh = new Date();
+          yesterdayIsh.setUTCHours(-1, 0 ,0);
+          const owner = context.repo.owner;
+          const name = process.env.GGG_REPOSITORY || context.repo.repo;
+          const expireDate = yesterdayIsh.toISOString().replace(/[:.]/g, "_");
+          const query = `
+            query {
+              repository(name: "${name}", owner: "${owner}") {
+                  id
+                  name
+                  refs(refPrefix: "refs/heads/", first: 10) {
+                    edges {
+                      node {
+                        name
+                        id
+                        pulls:associatedPullRequests(first: 5, states:OPEN) {
+                          edges {
+                            node {
+                              id
+                              number
+                              title
+                            }
+                          }
+                        }
+                      }
+                    }
+                }
+              }
+            }
+          `;
+          console.log(query);
+          const result = await github.graphql(query);
+          console.log(result);
+          console.log(result.repository.refs.edges);
+          result.repository.refs.edges.map(br => {
+            const name = br.node.name;
+            const suffix = name.match(/ggg-test-branch-\s+_(.*)/);
+            if (suffix && suffix < expireDate) {
+              if (br.node.pulls.edges.length) {
+                console.log(`Closing PR ${br.node.pulls.edges[0].node.number}`);
+              }
+              console.log(`Deleting branch ${br.node.name}`);
+            }
+          });
+      if: env.GGG_TOKEN # || env.GGG_REPOSITORY
+
     - name: 2Clean up branches and PRs
       uses: actions/github-script@v3
       with:
@@ -68,32 +121,31 @@ jobs:
         script: |
           const yesterdayIsh = new Date();
           yesterdayIsh.setUTCHours(-4, 0 ,0);
-          const owner: context.repo.owner,
-          const name: context.repo.repo,
-          const expireDate: yesterdayIsh.toISOString(),
+          const owner = context.repo.owner;
+          const name = process.env.GGG_REPOSITORY || context.repo.repo;
+          const expireDate = yesterdayIsh.toISOString();
           const query = `{
             search(
-              query: "repo:${owner}/${name} is:pr is:open updated:<=${expireDate}", type: ISSUE, last: 100) {
+              query: "ggg in:title repo:${owner}/${name} is:pr is:open created:<=${expireDate}", type: ISSUE, last: 100) {
               edges {
                 node {
                   ... on PullRequest {
                     id
-                    url
+                    number
                     title
                     createdAt
                     updatedAt
+                    headRefName
                   }
                 }
               }
             }
           }`;
-
-#          const variables = {
-#            owner: context.repo.owner,
-#            name: context.repo.repo,
-#            expireDate: yesterdayIsh.toISOString(),
-#          };
-#          const result = await github.graphql(query, variables);
           const result = await github.graphql(query);
+          console.log(query);
           console.log(result.search.edges);
+          result.search.edges.map(pr => {
+              console.log(`Closing PR ${pr.node.number}`);
+              console.log(`Deleting branch ${pr.node.headRefName}`);
+          });
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
