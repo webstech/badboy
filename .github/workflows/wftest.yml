@@ -67,7 +67,7 @@ jobs:
         # github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           const yesterdayIsh = new Date();
-          yesterdayIsh.setUTCHours(-48, 0 ,0);
+          yesterdayIsh.setUTCHours(-4, 0 ,0);
           const query = `{
             search(query: "repo:$owner/$name is:pr is:open updated:<=$expireDate", type: ISSUE, last: 100) {
               edges {
