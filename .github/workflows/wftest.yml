@@ -66,8 +66,8 @@ jobs:
         github-token: ${{secrets.GGG_TOKEN}}
         # github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          const date = new Date();
-          const date.setUTCHours(-48, 0 ,0);
+          const prevDate = new Date();
+          const prevDate.setUTCHours(-48, 0 ,0);
           const query = `search(query: "repo:$owner/$name is:pr is:open updated:<=$expireDate", type: ISSUE, last: 100) {
             edges {
               node {
@@ -84,7 +84,7 @@ jobs:
           const variables = {
             owner: context.repo.owner,
             name: context.repo.repo,
-            expireDate: date.toISOString(),
+            expireDate: prevDate.toISOString(),
           }
           const result = await github.graphql(query, variables)
           console.log(result)
