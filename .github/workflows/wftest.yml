@@ -1,0 +1,61 @@
+# Run tests against developer push
+
+# Runs jobs on linux and windows to maintain compatibility.
+# The main repo is checked out into a sub-directory because an optional
+# second repo may be checked out for testing.
+
+name: cleanup
+
+on:
+  push:
+    # branches: [ wftest ]
+    # branches-ignore: [ master, main ]
+
+jobs:
+  build-test:
+    name: Node v${{ matrix.node-version }} on ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [14.x]
+        os: [ubuntu-latest]
+        #os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    # job level env vars used for a couple of steps
+    env:
+      # see github-glue.test.ts for info on setting these
+      GGG_TOKEN: ${{ secrets.GGG_TOKEN }}
+      # GGG_REPOSITORY: ${{ secrets.GGG_REPOSITORY }}
+
+    steps:
+    - uses: actions/setup-node@v1.4.2
+      with:
+        node-version: '${{ matrix.node-version }}' # optional, default is 10.x
+
+    - name: Clean up branchss and PRs
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{secrets.GGG_TOKEN}}
+        # github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const query = `query($owner:String!, $name:String!) {
+            repository(owner:$owner, name:$name){
+              pullRequests(last: 3) {
+                totalCount,
+                nodes {
+                  id,
+                  title,
+                  updatedAt
+                }
+              }
+            }
+          }`;
+          const variables = {
+            owner: context.repo.owner,
+            name: context.repo.repo
+          }
+          const result = await github.graphql(query, variables)
+          console.log(result)
+      if: env.GGG_TOKEN # || env.GGG_REPOSITORY
