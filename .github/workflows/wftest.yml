@@ -68,24 +68,27 @@ jobs:
         script: |
           const yesterdayIsh = new Date();
           yesterdayIsh.setUTCHours(-48, 0 ,0);
-          const query = `{ search(query: "repo:$owner/$name is:pr is:open updated:<=$expireDate", type: ISSUE, last: 100) {
-            edges {
-              node {
-                ... on PullRequest {
-                  id
-                  url
-                  title
-                  createdAt
-                  updatedAt
+          const query = `{
+            search(query: "repo:$owner/$name is:pr is:open updated:<=$expireDate", type: ISSUE, last: 100) {
+              edges {
+                node {
+                  ... on PullRequest {
+                    id
+                    url
+                    title
+                    createdAt
+                    updatedAt
+                  }
                 }
               }
             }
           }`;
+
           const variables = {
             owner: context.repo.owner,
             name: context.repo.repo,
             expireDate: yesterdayIsh.toISOString(),
-          }
-          const result = await github.graphql(query, variables)
-          console.log(result)
+          };
+          const result = await github.graphql(query, variables);
+          console.log(result);
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
