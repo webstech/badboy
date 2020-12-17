@@ -57,7 +57,7 @@ jobs:
             name: context.repo.repo
           }
           const result = await github.graphql(query, variables)
-          console.log(result.repository.nodes)
+          console.log(result.repository.pullRequests.nodes)
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
 
     - name: 2Clean up branches and PRs
@@ -68,7 +68,7 @@ jobs:
         script: |
           const yesterdayIsh = new Date();
           yesterdayIsh.setUTCHours(-48, 0 ,0);
-          const query = `search(query: "repo:$owner/$name is:pr is:open updated:<=$expireDate", type: ISSUE, last: 100) {
+          const query = `{ search(query: "repo:$owner/$name is:pr is:open updated:<=$expireDate", type: ISSUE, last: 100) {
             edges {
               node {
                 ... on PullRequest {
