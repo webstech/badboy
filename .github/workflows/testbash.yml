@@ -1,0 +1,42 @@
+name: test bash
+
+on:
+  workflow_dispatch:
+
+env:
+  TARGET_GITHUB_REPOSITORY: webstech/badboy
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  test-bash:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - name: Partial clone
+      run: |
+        git clone --bare --depth=1 -b effing --filter=blob:none https://github.com/$TARGET_GITHUB_REPOSITORY .
+        git config user.name "foo boy"
+        git config user.email "fooboy@example.com"
+        git config url.https://x-access-token:$GH_TOKEN@github.com/.insteadOf https://github.com/
+        # git config url.https://${{ secrets.PAT }}@github.com/.insteadOf https://github.com/
+        git config --list
+    - name: Push to mirror
+      run: |
+        set -e
+        backoff=0
+        while (
+          git push https://github.com/$TARGET_GITHUB_REPOSITORY effing;
+          echo $? >exit.code
+        ) 2>&1 | tee output.log; exit_code="$(cat exit.code)"; test 0 != "$exit_code" && grep 403 output.log
+        do
+          backoff=$(($backoff+1))
+          test 10 -gt $backoff || {
+            echo '::error::Failed too many times' >&2
+            exit $exit_code
+          }
+          printf '::warning::Access token somehow not yet active; sleeping for %d seconds\nexit code: %s\n' \
+            $backoff $(cat exit.code)
+          sleep $backoff
+        done
+        exit $exit_code
