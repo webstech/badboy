@@ -35,7 +35,7 @@ jobs:
         node-version: '${{ matrix.node-version }}' # optional, default is 10.x
 
     - name: Clean up branches and PRs
-      uses: actions/github-script@v3
+      uses: actions/github-script@v9
       with:
         github-token: ${{secrets.GGG_TOKEN}}
         # github-token: ${{secrets.GITHUB_TOKEN}}
@@ -62,7 +62,7 @@ jobs:
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
 
     - name: Clean up branches which closes PRs
-      uses: actions/github-script@v3
+      uses: actions/github-script@v9
       with:
         github-token: ${{secrets.GGG_TOKEN}}
         # github-token: ${{secrets.GITHUB_TOKEN}}
@@ -114,7 +114,7 @@ jobs:
       if: env.GGG_TOKEN # || env.GGG_REPOSITORY
 
     - name: 2Clean up branches and PRs
-      uses: actions/github-script@v3
+      uses: actions/github-script@v9
       with:
         github-token: ${{secrets.GGG_TOKEN}}
         # github-token: ${{secrets.GITHUB_TOKEN}}
